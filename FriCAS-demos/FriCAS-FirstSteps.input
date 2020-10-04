@@ -20,7 +20,7 @@ setFormat!(FormatMathJax)$JFriCASSupport
 
 )version
 
--- This notebook is licenced under [CC BY-SA 3.0]{http://creativecommons.org/licenses/by-sa/3.0/).
+-- This notebook is licenced under [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/).
 --
 -- # FriCAS Tutorial (First Steps)
 --
