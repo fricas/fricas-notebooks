@@ -1,0 +1,123 @@
+-- ---
+-- jupyter:
+--   jupytext:
+--     formats: ipynb,input:light
+--     text_representation:
+--       extension: .input
+--       format_name: light
+--       format_version: '1.5'
+--       jupytext_version: 1.5.2
+--   kernelspec:
+--     display_name: FriCAS
+--     language: spad
+--     name: jfricas
+-- ---
+
+-- This notebook is licenced under
+-- [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/).
+--
+-- # FriCAS Help set commands
+--
+-- ## Ralf Hemmecke &lt;[ralf@hemmecke.org](mailto:ralf@hemmecke.org)&gt;
+--
+-- Sources at [Github](http://github.com/fricas/fricas-notebooks/).
+
+)set message type off
+)set output algebra off
+setFormat!(FormatMathJax)$JFriCASSupport
+)set message type on
+
+-- # )help set
+
+)help set
+
+
+-- # )set
+
+
+)set
+
+
+-- ## )set breakmode
+
+)set breakmode
+
+
+-- ## )set compiler
+
+)set compiler
+
+
+-- ## )set expose
+
+)set expose
+
+
+-- ## )set functions
+
+)set functions
+
+
+-- ## )set fortran
+
+)set fortran
+
+
+-- ## )set hyperdoc
+
+)set hyperdoc
+
+
+-- ## )set help
+
+)set help
+
+
+-- ## )set history
+
+)set history
+
+
+-- ## )set messages
+
+)set messages
+
+
+-- ### )set messages prompt
+
+)set messages prompt
+
+
+-- ### )set messages time
+
+)set messages time
+
+
+-- ## )set output
+
+)set output
+
+
+-- ### )set output fraction
+
+)set output fraction
+
+
+-- ## )set quit
+
+)set quit
+
+
+-- ## )set streams
+
+)set streams
+
+
+-- ## )set system
+
+)set system
+
+
+-- ## )set userlevel
+
+)set userlevel

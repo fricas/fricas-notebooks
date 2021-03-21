@@ -1,0 +1,168 @@
+-- ---
+-- jupyter:
+--   jupytext:
+--     formats: ipynb,input:light
+--     text_representation:
+--       extension: .input
+--       format_name: light
+--       format_version: '1.5'
+--       jupytext_version: 1.10.0
+--   kernelspec:
+--     display_name: FriCAS
+--     language: spad
+--     name: jfricas
+-- ---
+
+-- This notebook is licenced under
+-- [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/).
+--
+-- # FriCAS Tutorial (Numbers)
+--
+-- ## Ralf Hemmecke &lt;[ralf@hemmecke.org](mailto:ralf@hemmecke.org)&gt;
+--
+-- Sources at [Github](http://github.com/fricas/fricas-notebooks/).
+
+)set message type off
+)set output algebra off
+setFormat!(FormatMathJax)$JFriCASSupport
+)set message type on
+
+)version
+
+-- ## Finite rings
+-- FriCAS allows to work in finite fields.
+
+P := PrimeField 7;
+a: P := 1
+
+(Integer has CharacteristicZero, P has CharacteristicNonZero)
+
+-- Of course, all the field operations make sense.
+
+a2 := a+a; a3 := a2 + a
+
+a2 + a3 + 2
+
+10*a2 - 5
+
+1/a2
+
+-- There is a simple way to work in arbitrary Galois fields.
+
+F := FiniteField(2,3);
+definingPolynomial()$F
+basis()$F
+
+-- A finite field is a cyclic group, so it has a primitive element.
+
+f: F := primitiveElement()
+
+[f^i for i in 0..7]
+
+-- All the field axioms hold.
+
+1/f
+
+-- Also finding solutions of polynomials over finite fields works.
+
+solve(f*y^2 + 1$F, y)
+
+-- Similarly, one can construct and work with matrices over finite fields.
+
+M := SquareMatrix(2, F);
+m: M := matrix [[1, f],[1+f, f]]
+
+m * transpose(m) + m
+
+(M has Field, M has Ring, M has CommutativeRing)
+
+-- We can have finite rings with zero divisors.
+
+W := IntegerMod(6);
+w2: W := 2
+w3: W := 3
+
+w2*w3
+
+w2^2+w3
+
+(W has Ring, W has noZeroDivisors)
+
+-- The "false" that is returned by the following operation is to be
+-- interpreted as: "It is not know whether `IntegerMod(7)` has no zero
+-- divisors".
+
+IntegerMod(7) has noZeroDivisors
+
+-- By general principle, FriCAS can construct power series over finite fields.
+
+-- ## Integers localized at a prime
+-- Sometimes it might be useful to work with rational numbers
+-- with the condition that no denominator is divisible by a
+-- certain prime. Such structures are implemented in FriCAS
+-- by the domain `IntegerLocalizedAtPrime(p)`.
+-- This domain is a ring.
+
+Z3 ==> IntegerLocalizedAtPrime 3
+
+-- Elements are created by retracting rational numbers.
+
+x := retract(7/4)$Z3
+y := retract(1/2)$Z3
+
+-- Of course, it must be an error, if you try to consider a rational
+-- number that has a denominator that is divisible by the prime as
+-- an element of the localized ring.
+
+retractIfCan(2/27)$Z3
+
+retract(2/27)$Z3
+
+-- The sum $x+y$ gives $\frac{9}{4}=3^2\cdot\frac{1}{4}$.
+
+z := x+y
+
+-- Clearly, `Z3` is not a field, but a commutative ring
+-- without zero divisors.
+
+(Z3 has Field, Z3 has CommutativeRing, Z3 has noZeroDivisors)
+
+-- Internally, the number is stored as a pair consisting of
+-- a power of the prime together with a unit of the ring.
+
+exponent z
+unit z
+
+-- Since `Z3` is not a field, ordinary division cannot be done
+-- in `Z3`, so FriCAS extends the domain by applying the
+-- `Fraction` constructor (see result type).
+
+x/y
+y/z
+
+-- `Z3` is even a Euclidean domain, so the Euclidean algorithm
+-- can be applied.
+
+Z3 has EuclideanDomain
+
+euclideanSize z
+
+t := retract(27/5)$Z3
+
+gcd(x,y), gcd(t,z)
+
+-- In a Euclidean domain, we can do division with remainder.
+
+divide(x,y)
+divide(y,z)
+divide(t,z)
+
+-- If we know in advance that the division has a zero remainder,
+-- we can use the `exquo` function and retract the result
+-- into an element of `Z3`.
+
+1 exquo x
+
+(t exquo z)::Z3
+
+unitNormal z

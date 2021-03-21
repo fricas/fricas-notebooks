@@ -1,0 +1,345 @@
+-- ---
+-- jupyter:
+--   jupytext:
+--     formats: ipynb,input:light
+--     text_representation:
+--       extension: .input
+--       format_name: light
+--       format_version: '1.5'
+--       jupytext_version: 1.10.0
+--   kernelspec:
+--     display_name: FriCAS
+--     language: spad
+--     name: jfricas
+-- ---
+
+-- This notebook is licenced under
+-- [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/).
+--
+-- # FriCAS Tutorial (First Steps)
+--
+-- ## Ralf Hemmecke &lt;[ralf@hemmecke.org](mailto:ralf@hemmecke.org)&gt;
+--
+-- Sources at [Github](http://github.com/fricas/fricas-notebooks/).
+
+)set message type off
+)set output algebra off
+setFormat!(FormatMathJax)$JFriCASSupport
+)set message type on
+
+)version
+
+-- ## General remarks
+
+-- FriCAS is a typed computer algebra system.
+--
+-- In this notebook we evaluate certain expressions.
+-- Each expression is evaluated and yields a value
+-- that belongs to a certain type.
+-- This type is shown at the right hand side after the value.
+--
+-- Note that this type is a hyperlink that leads to its
+-- description.
+--
+-- By convention, types in FriCAS begin with a capital letter.
+-- Functions and variables are usually start with a small letter.
+
+-- ## FriCAS as a Pocket Calculator
+-- Type an expression into a cell and press SHIFT-ENTER.
+
+1+1
+
+1-1
+
+-1
+
+-- <span style="color: #ff0000;">Everything in FriCAS has a type.</span>
+--
+-- The FriCAS interpreter guesses the most appropriate type.
+-- For simple things types do not matter much.
+--
+-- Apart from the above integer domains, there are rational numbers
+-- and floating point numbers, complex integers, complex floats, etc.
+
+2/3
+
+3/6
+
+2/3 + 1/5 * (- 2/11)
+
+2^10
+
+-- FriCAS can compute with arbitrarily big numerical values.
+-- Only memory and time set the limits.
+
+factorial(100)
+
+-- By default 20 digits are used for floating point computation.
+
+2/3 + 1.0
+
+-- By using the `digits` function, one can query and set the number
+-- of digits that are used during the computation.
+--
+-- By default, a fraction is expressed in the most appropriate domain,
+-- which would be `Fraction(Integer)`.
+-- Coercion into the appropriate type is done via the `::` operator.
+
+digits 40
+22/7 :: Float
+digits(20)
+22/7 :: Float
+
+-- A number that contains a dot, is automatically a member of the
+-- floating point domain.
+-- So the following fraction is computed within the respective domain,
+-- namely, `Float`.
+
+22/7.0
+
+sqrt(2.0)
+
+-- For integer arguments, it is not clear what the user actually wants.
+-- So the expression remains unevaluated.
+-- Note that we get `AlgebraicNumber` as yet another number type.
+
+sqrt(3)
+
+-- In fact, `AlgebraicNumber` is a step into the direction of computing
+-- with symbols rather than just numbers.
+
+sqrt(2)+sqrt(3)
+
+-- FriCAS can also deal with complex numbers.
+-- The symbol `%i` denotes the imaginary unit.
+-- Here we have Gaussian integers.
+
+2+3*%i
+
+-- As with integers, the resulting type is appropriately chosen,
+-- i.e. "complex rational numbers".
+
+(2 + 3*%i) / (3 + 5*%i)
+
+-- As with real numbers where `Float` is the corresponding domain in FriCAS,
+-- complex numbers can only be modelled approximately on a computer.
+
+sqrt(2.0) * (1 + 2.0*%i)
+
+-- Not everything can be done with floating point numbers.
+-- FriCAS does not automatically extend the number domain from real numbers
+-- to complex numbers.
+-- It rather considers `Float` as a domain with partial operations,
+-- i.e. operations that might fail on certain input.
+
+sqrt(5.0)
+
+sqrt(-5.0)
+
+-- But we can convert an algebraic number into a complex
+-- floating point number.
+
+sqrt(-5)
+sqrt(-5) :: Complex(Float)
+
+-- There are a lot of functions that can be used with
+-- floating point numbers.
+--
+-- Note that in the following list `%` is an abbreviation of
+-- "this domain", i.e. `Float` in our case.
+-- The question mark is just used as a placeholder for an argument.
+
+)show Float
+
+-- FriCAS can be used as a numerical engine.
+
+tan(sin(1.0)*exp(3.5))
+
+log(abs(-3.0*sin(2*3.1415)))
+
+-- ## Computation with symbols
+-- Entering variables is as easy as in most other  CAS.
+
+p:=4*x^2+4*x+1
+
+-- Note that the resulting domain of the `factor` operation
+-- is not `Polynomial(Integer)`.
+
+factor(p)
+
+-- The domain `Factored(X)` keeps its elements in a factored
+-- form as long as possible.
+
+f:=factor(x^2-1)
+
+g:=f*(x-1)
+
+h:=g+1
+
+h-1
+
+-- Since in a rational function field any element is a unit,
+-- the concept of factorization does not do anything.
+-- But there is a function `factorFraction` that factors the
+-- numerator and denominator separately.
+
+r := (x^2+2*x+1)/(x^2-9)
+factor r
+
+factorFraction r
+
+-- FriCAS knows about the standard mathematical functions
+-- and can do computations with them.
+
+sin(x)*exp(x)
+
+-- Some mathematical constants and their properties are built-in.
+
+-- %e
+
+-- %pi
+
+-- %e^(%pi * %i)
+
+-- ## Expressions vs. specific types
+-- Eagerness of evaluation of an expression depends on its type.
+-- In fact, each type defines a certain normal form and the
+-- expression is simply stored in this form.
+
+(x^100 + 1)*(x^100-1)
+
+(x^50-1)/(x-1)
+
+-- The domain `Expression(Integer)` is similar to the way
+-- expressions are stored in other computer algebra systems.
+--
+-- If FriCAS does not find a more appropriate interpretation
+-- for an expresssion, the expression often ends up in being
+-- of type `Expression(Integer)`.
+
+sin(%pi/3)
+
+e := sin(x)^2 + cos(x)^2
+
+-- Some expressions are not automatically simplified.
+
+simplify(e)
+
+-- In some cases, it is simply not clear what a
+-- "simpler expression" actually means.
+
+simplify(sin(2*x))
+
+simplify(2*sin(x)*cos(x))
+
+-- ## Variables, Assignments, Equations, Declarations
+-- In addition to accessing previoiusly computed values via the `%%(n)`
+-- mechanism, intermediate results can also be stored in variables.
+
+a := 1/3 + 22/7
+
+a
+
+-- Assignment is done via `:=`. A simple `=` sign just creates an equation.
+
+eq := A = 1/3 + 22/7
+
+-- <span style="color: #ff0000;">FriCAS is case-sensitive.</span>
+
+A
+
+A = lhs(eq)
+
+-- In order to see whether an equation is true or false,
+-- we must turn it into a boolean.
+
+(A=lhs(eq))::Boolean
+
+(A=10)::Boolean
+
+-- The type of a variable can be declared in advance.
+-- Its type is then fixed for the whole session.
+
+v: PositiveInteger
+
+-- If a variable has been declared, it is no longer automatically
+-- converted to an indeterminate that can be used in an expression.
+
+5*v
+
+-- One would have to prepend an apostroph to refer to a symbol of that name.
+
+5 * 'v
+
+-- Only values that belong to the respective type can be assigned to
+-- the variable.
+
+v := -1
+
+v := 1
+
+-- ## Functions
+-- Functions, are first class objects, they can be assigned to variables
+-- and can be used as arguments of functions.
+--
+-- The operator `+->` is used to created anonymous functions,
+-- i.e. lambda expressions.
+
+f := x +-> sin(x)*exp(x)
+
+f(%pi/3)
+
+-- Simply using an expression in a functional way makes no sense.
+
+g := sin(x)*exp(x)
+
+g(%pi/2)
+
+eval(g, x=%pi/2)
+
+-- Declaring the type of a function explicitly,
+-- restricts the way the function can be used.
+
+f1: Integer -> Integer
+
+f1 := x +-> gcd(x,x+6)
+
+f1(18)
+
+-- Since the functions has been declared for integer arguments,
+-- it cannot be used with floating point arguments.
+
+f1(2.3)
+
+-- Functions can also be defined via the "delayed assignment" using `==`.
+
+f2(x: Integer): String == reverse(string(x))
+
+-- Functions will automatically be compiled to machine code,
+-- the first time they are used.
+
+f2(123453)
+
+-- The function cannot be applied to strings, because that would
+-- require the string to be converted into an integer.
+
+f2("FriCAS")
+
+-- Multivariate function definitions are no problem.
+
+f3(x,y,z) == (x+2*y)*z
+
+f3(3,4,2)
+
+f3(3.2,4.1,2)
+
+-- Note that by not specifying the types in the definition
+-- of `f3` above, FriCAS will use the definition as a pattern
+-- to define functions with appropriate types when the function
+-- is first called. These functions have the same name, but
+-- due to different input/output type are, in fact, different.
+-- Not so different here, because the follow the same pattern.
+-- However, in the programming language SPAD that comes with FriCAS,
+-- it is, allowed and common to have functions with the same
+-- name/identifier that have different input/output types.
+-- That is known as function overloading.

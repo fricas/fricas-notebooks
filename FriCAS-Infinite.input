@@ -1,0 +1,100 @@
+-- ---
+-- jupyter:
+--   jupytext:
+--     formats: ipynb,input:light
+--     text_representation:
+--       extension: .input
+--       format_name: light
+--       format_version: '1.5'
+--       jupytext_version: 1.10.0
+--   kernelspec:
+--     display_name: FriCAS
+--     language: spad
+--     name: jfricas
+-- ---
+
+-- This notebook is licenced under
+-- [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/).
+--
+-- # FriCAS Tutorial (Infinite Structures)
+--
+-- ## Ralf Hemmecke &lt;[ralf@hemmecke.org](mailto:ralf@hemmecke.org)&gt;
+--
+-- Sources at [Github](http://github.com/fricas/fricas-notebooks/).
+
+)set message type off
+)set output algebra off
+setFormat!(FormatMathJax)$JFriCASSupport
+)set message type on
+
+)version
+
+-- ## Stream
+-- An important data structure is a stream.
+-- A stream can be seen as an infinite list.
+-- But it is a lazy data structure.
+-- Only finitely many elements are ever computed.
+-- And the stream knows how to compute more elements.
+--
+-- The simplest way to create a stream is by a comprehension
+-- scheme with an open segment.
+
+[i^2 for i in 10..]
+
+-- Stream comprehension also works with such-that clauses.
+
+s:=[i for i in 1.. | even? i]
+
+[x for x in s | x::PrimeField(3) = 0]
+
+-- FriCAS lets you also create infinite structures of infinite structures.
+
+t :=[[i/j for j in 1..] for i in 1..]
+
+-- Accessing respective values is as usual with the dot notation.
+
+t.500.39
+
+-- Primes can be created by selecting numbers that fulfill the
+-- `prime?` predicate.
+
+primes := [i for i in 2.. | prime? i]
+
+twinPrimes := [[p,p+2] for p in primes | prime?(p+2)]
+
+-- Stream is the underlying data structure for power series.
+-- In fact there are three different domains:
+-- `UnivariateTaylorSeries`,
+-- `UnivariateLaurentSeries`,
+-- `UnivariatePuiseuxSeries`.
+--
+-- The most general series, Puiseux series, allows fractional powers.
+
+series(sqrt sin(x), x=0)
+
+-- Laurent series are series that can have a finite number
+-- of negative powers.
+
+l:=laurent(1/(x*log(x)), x=1)
+
+order(l)
+
+taylor(cos(x), x=0)
+
+x := series 'x;
+sin x
+
+-- We can check whether certain expansions agree.
+-- Of course, the vanishing of this series is only computed up
+-- to a certain order.
+
+z := 2*sin(x)*cos(x) - sin(2*x)
+
+coefficient(z,30)
+
+-- You can change how many elements of the stream you want to
+-- have computed. The default is 10.
+
+)set stream calc 20
+
+sin x

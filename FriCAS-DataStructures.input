@@ -1,0 +1,285 @@
+-- ---
+-- jupyter:
+--   jupytext:
+--     formats: ipynb,input:light
+--     text_representation:
+--       extension: .input
+--       format_name: light
+--       format_version: '1.5'
+--       jupytext_version: 1.10.0
+--   kernelspec:
+--     display_name: FriCAS
+--     language: spad
+--     name: jfricas
+-- ---
+
+-- This notebook is licenced under
+-- [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/).
+--
+-- # FriCAS Tutorial (Data structures)
+--
+-- ## Ralf Hemmecke &lt;[ralf@hemmecke.org](mailto:ralf@hemmecke.org)&gt;
+--
+-- Sources at [Github](http://github.com/fricas/fricas-notebooks/).
+
+)set message type off
+)set output algebra off
+setFormat!(FormatMathJax)$JFriCASSupport
+)set message type on
+
+)version
+
+-- ## Language-defined Types
+-- A record is a data structure with a fixed number of named entries.
+
+r: Record(name: String, age: Integer) := ["Albert", 42]
+
+-- Getting and setting entries is done by using a dot notation.
+
+r.name
+
+r.age := 75
+
+r
+
+-- `Union` is a data structure that can hold any value of the given types,
+-- but no value of any other type.
+-- In mathematical terms, it corresponds to the disjoint union.
+
+u: Union(str: String, int: Integer, flo: Float) := 4::Integer
+
+u := "some text"
+
+(u case int, u case str)
+
+-- Tuples are immutable, i.e., you cannot change an entry.
+-- All entries must be of the same type.
+
+t := (3, -1, 17)
+
+s := ("Das", "ist", "ein", "Haus")
+
+-- Tuples can be used in parallel assignments.
+
+(x,y,z) := (-1,0,1);
+
+(z,y,x)
+
+-- ## Library-defined Data Types
+-- FriCAS comes with a lot of data structures.
+-- There are lists, arrays, hash tables, trees, streams, etc.
+
+-- ### List
+-- The type `List(T)` denotes linked lists whose elements all
+-- belong to type `T`.
+
+li := [2,4,5,-6]
+
+ls := ["I", "am", "a", "list", "of", "strings"]
+
+-- All elements of a list must belong to the same type.
+-- This is advantageous, since the type of the list asserts
+-- something about its members.
+
+concat ls
+
+-- The following operation fails immediately without ever
+-- touching one single element of the list.
+-- Now imagine what happens in a typeless system for a list
+-- with 1000 elements that are all strings except the last one.
+
+concat li
+
+-- FriCAS does not allow to insert an element of the wrong type
+-- into the list.
+
+concat("foo", li)
+
+concat(3, li)
+
+-- One can access a particular element of the list with the
+-- dot notation.
+
+li.3
+
+-- The length of a list can be computed by the `#` operation.
+
+#li
+
+-- Lists can be constructed by list comprehension.
+
+[3*x for x in 1..10]
+
+-- The vertical bar denotes a "such-that" clause, i.e. an element
+-- only belongs to the list, if the boolean expression in the
+-- such-that clause is satisfied.
+
+[3*x+1 for x in 1..20 | odd? x]
+
+-- List can contain more complicated structures.
+-- Note the parallel iteration scheme in the following expression.
+
+[concat(x ,concat(y, li)) for x in 1..3 for y in -1..-100 by -2]
+
+-- ### Array
+-- Arrays allow for constant time access since its elements are
+-- stored in a contiguous block of memory.
+
+a := oneDimensionalArray [2,3,9,-1,-3,2,7]
+
+removeDuplicates a
+
+-- ### Hash Table
+
+-- Hash tables allow a (nearly) constant time access.
+-- They can be thought of as a partial function from the
+-- key space to the value space.
+-- `Table` relies on the underlying Lisp hashing facilities
+-- and, therefore, uses `AssociationList` with linear access time
+-- if the Key type is not recognized to be hashable via Lisp.
+
+upper := table() $ Table(String, String)
+
+upper."a" := "A"
+
+for i in 1..3 repeat upper("bcd".i) := "BCD".i
+
+upper
+
+upper."c"
+
+-- `XHashTable` is an efficient implementation of a hash table
+-- structure with (almost) linear element access time due to the
+-- use of a hash function and direct array access.
+--
+-- In contrast to `Table`, `XHashTable` works for all key types
+-- that export a `hash` function.
+
+-- Now we can repeat the commands from above with `Table` replaced by `XHashTable`.
+
+upper := table() $ XHashTable(String, String) ;
+upper."a" := "A"
+for i in 1..3 repeat upper("bcd".i) := "BCD".i
+upper
+upper."c"
+
+-- ### Segment
+-- Segmented lists provide a way to enter data efficiently.
+
+sl := [2..5,3,-1,-2..5, 10..20]
+
+expand sl
+
+-- Segments can also be stored in a variable and remembered for later.
+-- With the `by` keyword one can specify a stepsize.
+-- Of course, the stepsize can be negative.
+
+sg := 4 .. 20 by 3
+
+[x^2 for x in sg | even? x]
+
+-- Segments need not have an upper bound.
+
+sp := 0..
+
+-- ### Stream
+--
+-- Infinite data structures can be handled.
+-- A stream is like an infinite list.
+-- Elements are computed on demand.
+
+even := [2*n for n in sp]
+
+odd := [2*n+1 for n in 0..]
+
+-- The `for` construction can be combined with a second one
+-- in order to run over two structures in parallel.
+
+first9even := [n for n in even for k in 1..9]
+
+-- In case the stream is finite, it can be converted into a list.
+
+entries first9even
+
+-- ### Heap
+-- The domain Heap is a special data structure that allows to insert
+-- elements in $O(\log n)$ time and extracts the maximum from the
+-- heap also in $O(\log n)$.
+-- Heaps are most appropriate for algorithms that need a priority queue.
+
+h := heap  ["a", "c", "d", "b","f", "h", "z","b"]
+
+[extract! h for n in 1..3]
+
+h
+
+insert!("b2",h)
+
+members h
+
+-- Because of the algorithms used to implement a heap,
+-- it makes no sense to provide a mechanism to extract
+-- the $n$-th element directly.
+
+h.3
+
+-- It is also impossible to create a heap over a domain that does
+-- not provide an ordering operation.
+
+PrimeField 7 has OrderedSet
+Heap(PrimeField 7)
+
+-- ### Multiset
+-- A multiset stores elements together with its occurences.
+-- It is like an unordered list with duplicates allowed.
+
+li := [1,2,4,5,6,2,5,1,4,2,5]
+
+multiset li
+
+-- ### Set
+-- A set is an unordered list with duplicates removed.
+
+s := set li
+
+-- One can ask for the size of the set.
+
+#s
+
+-- Apply the usual set operations like union, intersection,
+-- set difference, etc.
+
+union(s, set [3,4,5])
+intersect(s, set [3,4,5])
+
+-- Since a set is unordered, there is no concept of a $n$-th element.
+
+s.3
+
+-- ### Stack
+-- A stack implements a LIFO queue (last-in, first-out).
+-- It is like a list, but not all list operations are available.
+-- For example, one cannot remove an element which is not the
+-- top-most element.
+
+s := stack [2,4,-2,3,6]
+
+top s
+
+push!(-7,s)
+
+s
+
+#s
+
+pop! s
+
+s
+
+-- There are many more data structures. Among them are trees and queues.
+
+)what domain Tree
+
+)what domain Queue
+
+)what domain Stream

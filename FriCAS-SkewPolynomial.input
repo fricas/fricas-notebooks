@@ -1,0 +1,235 @@
+-- ---
+-- jupyter:
+--   jupytext:
+--     formats: ipynb,input:light
+--     text_representation:
+--       extension: .input
+--       format_name: light
+--       format_version: '1.5'
+--       jupytext_version: 1.10.0
+--   kernelspec:
+--     display_name: FriCAS
+--     language: spad
+--     name: jfricas
+-- ---
+
+-- This notebook is licenced under
+-- [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/).
+--
+-- # FriCAS Tutorial (SkewPolynomial)
+--
+-- ## Ralf Hemmecke &lt;[ralf@hemmecke.org](mailto:ralf@hemmecke.org)&gt;
+--
+-- Sources at [Github](http://github.com/fricas/fricas-notebooks/).
+
+)set message type off
+)set output algebra off
+setFormat!(FormatMathJax)$JFriCASSupport
+)set message type on
+
+)version
+
+-- ## Univariate differential case
+-- Let's first consider a differential operator algebra $A$ over the
+-- integers $\mathbb{Z}$.
+-- $A$ can be represented as a polynomial ring in the variable $X$
+-- over the polynomial ring $\mathbb{Z}[x]$ where the variable $X$
+-- commutes with the coefficients by the rule $X x = x X + 1$.
+
+Z ==> Integer
+Zx ==> UnivariatePolynomial('x, Z)
+
+-- In FriCAS, such a skew polynomial algebra is not given by the
+-- above rule, but rather by a general commutation rule.
+-- $X p = \sigma(p) X + \delta(p)$, $p\in\mathbb{Z}[x]$.
+--
+-- For a differential algebra $\sigma$ is the identity map and
+-- $\delta$ is the derivation of $\mathbb{Z}[x]$ given by $\delta(x)=1$.
+
+sigma1: Automorphism Zx := 1
+delta1: Zx -> Zx := D $ Zx
+
+-- The notation `D $ Zz` specifies that FriCAS should take the
+-- function $D$ from the domain `Zx`.
+
+A ==> UnivariateSkewPolynomial('X, Zx, sigma1, delta1)
+
+-- In order to work in $A$, we name the indeterminates.
+
+x: A := 'x
+X: A := 'X
+X*x
+
+(x+X)^3
+
+-- ## Univariate shift case
+--
+-- Similarly, we can define a shift algebra $B$ with the respective
+-- variables $s$ and $S$, such that $S s = (s+1) S$.
+--
+-- Note that we introduce that shift algebra with coefficients
+-- coming from the above operator algebra $A$.
+
+As ==> UnivariatePolynomial('s, A)
+ss: As := 's
+
+sigma2: Automorphism As :=
+  morphism((p: As): As +->eval(p, ss = ss+1),
+           (p: As): As +->eval(p, ss = ss-1))
+
+delta2: As -> As := (p: As): As +-> 0
+
+B ==> UnivariateSkewPolynomial('S, As, sigma2, delta2)
+
+s: B := 's
+S: B := 'S
+
+S*s
+
+-- Of course, $S$ and $s$ commute with $X$ and $x$.
+
+[S*X, S*x, s*X, s*x]
+
+-- In this skew polynomial algebra, the multiplication sign uses
+-- the appropriate commutation rule.
+
+S*X*s
+
+S^2*X^2*(s-1)*x
+
+-- ## Multivariate case
+--
+-- The multivariate case is only sligthly more complicated.
+--
+-- Our goal is to create the skew polynomial ring
+-- $\mathbb{Q}(q)(y,w,u)[D_y,D_w,D_u]$ where
+--
+--   * $D_y \cdot y = y \cdot D_y + 1$
+--   * $D_w \cdot w = (w+1) \cdot D_w$
+--   * $D_u \cdot u = q u \cdot D_u$
+--
+-- Let us here use a field of rational functions in $q$ as
+-- coefficient domain.
+
+)clear prop u y w
+Z ==> Integer
+Qq ==> Fraction UnivariatePolynomial('q, Z)
+
+-- Now we define two sets of variables.
+-- The upper case letter will correspond to the "operator" variable,
+-- but in fact, we will not have any "operator algebra" here,
+-- since there is no action on any set involved.
+
+V ==> OrderedVariableList ['y, 'w, 'u]
+
+-- The lower case letters will be put into the "coefficient domain".
+
+M ==> SparseMultivariatePolynomial(Qq, V)
+K := Fraction M
+
+-- We need the respective "sigma" and "delta" functions that define
+-- the commutation rules of the skew polynomial ring.
+
+-- First for the variable $y$.
+
+sigmay: Automorphism K := 1;
+yv: V:= 'y;
+derivy(m: M): M == D(m, yv)
+deltay(k: K): K == D(k, derivy)
+
+-- Then for $w$.
+-- Note that we will reuse the delta function also for the variable $u$.
+
+wm: M := 'w;
+sigmaw1(k: K): K == eval(k, wm, wm+1)
+sigmaw2(k: K): K == eval(k, wm, wm-1)
+sigmaw: Automorphism K := morphism(sigmaw1, sigmaw2);
+deltawu(k: K): K == 0
+
+-- And finally for $u$.
+
+um: M := 'u; qQ: Qq := 'q::Qq; qQ1 := inv qQ;
+sigmau1(k: K): K == eval(k, um, qQ*um)$K
+sigmau2(k: K): K == eval(k, um, qQ1*um)$K
+sigmau: Automorphism K := morphism(sigmau1, sigmau2)$Automorphism(K);
+
+-- With the auxiliary functions above, we can define the sigma and delta
+-- function that we actually need for the definition of the domain.
+-- The code below, basically selects one of the functions above depending
+-- on which variables are involved.
+
+YV: V := index(1)$V; WV: V := index(2)$V;
+sigma(v: V): Automorphism K ==
+  if v=YV then sigmay else if v=WV then sigmaw else sigmau
+delta(v: V): K -> K == if v=YV then deltay else deltawu
+
+-- We put everything together.
+
+T ==> SparseMultivariateSkewPolynomial(K, V, sigma, delta)
+
+y: T := 'y::K::T;
+w: T := 'w::K::T; u: T := 'u::K::T; q: T := qQ::K::T;
+
+Y: T := monomial(1, index(1)$V, 1)
+W: T := monomial(1, index(2)$V, 1)
+U: T := monomial(1, index(3)$V, 1)
+
+u
+
+t: T := y*w*u*q
+Y*t
+W*t
+U*t
+
+W^2*Y^2*(w-1)*y
+
+-- ## Vectors and Matrices over Skew Polynomial Rings
+
+VT ==> Vector T
+
+[Y, W, U]
+
+lt: List T := [Y, W, U]
+
+vt: VT := vector lt
+
+dot(vt, vt)
+
+dot(vt, vt*y*w*u)
+
+w*vt
+vt*w
+
+MT ==> SquareMatrix(3, T)
+mt: MT := 1
+
+mt: MT := diagonalMatrix lt
+
+mt2: MT := matrix [[0,y,w],[0,0,u],[0,0,0]]
+
+m := mt+mt2
+
+m*m
+
+DT ==> DirectProduct(3, T)
+dt: DT := [u*W+1, w*y, w^2*W*u]
+
+m*m*dt
+
+MT has Ring
+
+MT has CommutativeRing
+
+mt*mt2
+
+mt2*mt
+
+mt*mt2-mt2*mt
+
+P ==> UnivariatePolynomial('x, MT)
+
+p: P := mt2*x^2+mt*x+m
+
+p*p
+
+P has CommutativeRing

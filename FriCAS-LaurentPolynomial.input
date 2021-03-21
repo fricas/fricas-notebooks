@@ -1,0 +1,174 @@
+-- ---
+-- jupyter:
+--   jupytext:
+--     formats: ipynb,input:light
+--     text_representation:
+--       extension: .input
+--       format_name: light
+--       format_version: '1.5'
+--       jupytext_version: 1.10.0
+--   kernelspec:
+--     display_name: FriCAS
+--     language: spad
+--     name: jfricas
+-- ---
+
+-- This notebook is licenced under
+-- [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/).
+--
+-- # FriCAS Tutorial (Laurent Polynomial)
+--
+-- ## Ralf Hemmecke &lt;[ralf@hemmecke.org](mailto:ralf@hemmecke.org)&gt;
+--
+-- Sources at [Github](http://github.com/fricas/fricas-notebooks/).
+
+)set message type off
+)set output algebra off
+setFormat!(FormatMathJax)$JFriCASSupport
+)set message type on
+
+)version
+
+-- ## Builtin LaurentPolynomial constructor
+-- There is a builtin constructor for univariate (not multivariate)
+-- Laurent polynomials.
+-- See also the
+-- [fricas-devel mailing list](
+-- https://groups.google.com/d/msg/fricas-devel/sltE0J-nss4/9IFaXUK-VooJ)
+-- for a discussion of its problems.
+--
+-- Below we construct univariate Laurent polynomials (in x) over $\mathbb{Q}$.
+
+Z ==> Integer
+Q ==> Fraction Z
+P ==> UnivariatePolynomial('x, Q)
+R ==> Fraction P
+L ==> LaurentPolynomial(Q, P)
+px := x :: P
+lx := x :: L
+
+-- Unfortunately, since exponentiation with a negative power is not
+-- implemented (in general the result is not a Laurent polynomial),
+-- we cannot simply enter a Laurent polynomial like this.
+
+l := lx^(-3)+5*lx^(-1)+7+lx^2
+
+-- There is, however, an operation that can create a negative power
+-- of the variable. In fact, there are two.
+
+ix := divide(1,lx).quotient
+ix := monomial(1, -1)$L
+
+-- We can enter the above polynomial like this.
+
+m(x,y) ==> monomial(x, y)$L
+l := m(1,-3) + m(5,-1) + 7 + m(1,2)
+
+-- On can also create Laurent polynomials by the following function.
+
+separate((11+px+px^10)/(px^3*(1-px)))$L
+
+-- The above $l$ might then be written as follows.
+
+l := (separate((1+5*px^2+7*px^3+px^5)/px^3)$L).polyPart
+
+-- We also want to truncate a Laurent series at a certain point
+-- and optain a Laurent polynomial.
+
+S ==> UnivariateLaurentSeries(Q, 'x, 0)
+sx := x :: S
+s := (sx^3-7*sx)/(3*sx^7-sx^4)
+
+rf := rationalFunction(s, 3)
+
+-- `rationalFunction` leads to a more general type than we want.
+-- Therefore, we simply try to coerce/retract it into the domain
+-- we want, i.e., a quotient field of univariate polynomials.
+
+pf := rf :: R
+
+(separate(pf)$L).polyPart
+
+-- Putting the above into a macro, we can make truncation a
+-- little simpler.
+
+TRUNC(s, n) ==> (separate(rationalFunction(s, n)::R)$L).polyPart
+TRUNC(s, 3)
+
+-- ## Univariate case
+
+-- For (internal) computation, one can also be more direct and create
+-- a monoid ring with the monoid being the integers and the
+-- coefficients being the rational numbers.
+-- Clearly, also this is a representation of a Laurent polynomial ring.
+
+QZ ==> PolynomialRing(Q, Z)
+
+-- Unfortunately, entering an element of this domain is a bit tricky
+-- and also the output does not look as one would expect from a
+-- Laurent polynomial.
+--
+-- Our example polynomial from above would look like this.
+
+qx := monomial(1, 1)$QZ
+iqx := monomial(1, -1)$QZ
+l := iqx^3 + 5*iqx + 7 + qx^2
+l^2
+
+-- That is certainly hard to interpret, but one can easily add a new
+-- domain that behaves like integers, but prints in a
+-- multiplicative form.
+
+-- In the following we escape to the shell to create a file
+-- with the contents shown below.
+-- This will only work in a jFriCAS (i.e., the Jupyter notebook
+-- frontend for FriCAS).
+-- If you are working with another frontend, then simply create
+-- a file `/tmp/xint.spad` with the contents given between the
+-- lines "cat <<'EOF' > /tmp/xint.spad" and "EOF".
+
+)!
+cat <<'EOF' > /tmp/xint.spad
+)abbrev domain XINT XInteger
+XInteger(sy: Symbol): IntegerNumberSystem == Integer add
+  coerce(x: %): OutputForm ==
+    o := sy :: OutputForm
+    one? x => o
+    i: Integer := x pretend Integer
+    x >= 0 => o^(i::OutputForm)
+    o^paren(i::OutputForm)
+EOF
+
+-- Now we compile that file.
+-- Since FriCAS resets certain variables during compilation,
+-- we must reset the output format to MathJax.
+
+)compile /tmp/xint.spad
+setFormat!(FormatMathJax)$JFriCASSupport
+
+-- Using `XInteger` instead of `Integer`, the output looks more pleasing.
+
+QZ ==> PolynomialRing(Q, XInteger("x"::Symbol))
+qx := monomial(1, 1)$QZ
+iqx := monomial(1, -1)$QZ
+l := iqx^3 + 5*iqx + 7 + qx^2
+l^2
+
+-- Truncation of the above Laurent series at degree 3 goes as follows.
+
+tr(s: S, n: Z): QZ ==
+  qz: QZ := 0
+  while (e := order(s, n+1)) <= n repeat
+    qz := qz + monomial(leadingCoefficient s, e)$QZ
+    s := reductum s
+  qz
+
+tr(s,3)
+
+-- Or construct the Laurent polynomial like this.
+-- Note that we must use the `complete` function to expand
+-- the (finite) stream such that it is recognized as finite
+-- by the `entries` function.
+
+mons := [monomial(r.c,r.k)$QZ for r in terms s while r.k < 4];
+reduce(+, entries complete mons)

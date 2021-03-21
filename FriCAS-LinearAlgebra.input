@@ -1,0 +1,192 @@
+-- ---
+-- jupyter:
+--   jupytext:
+--     formats: ipynb,input:light
+--     text_representation:
+--       extension: .input
+--       format_name: light
+--       format_version: '1.5'
+--       jupytext_version: 1.10.0
+--   kernelspec:
+--     display_name: FriCAS
+--     language: spad
+--     name: jfricas
+-- ---
+
+-- This notebook is licenced under
+-- [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/).
+--
+-- # FriCAS Tutorial (Linear Algebra)
+--
+-- ## Ralf Hemmecke &lt;[ralf@hemmecke.org](mailto:ralf@hemmecke.org)&gt;
+--
+-- Sources at [Github](http://github.com/fricas/fricas-notebooks/).
+
+)set message type off
+)set output algebra off
+setFormat!(FormatMathJax)$JFriCASSupport
+)set message type on
+
+)version
+
+-- ## Linear Algebra
+
+solve([x + 3*y = 2, -2*x + 5*y = 1])
+
+-- Solving linear equations with parameters is no problem.
+
+solve([x + 3*y = 2, -2*x + 5*y = 3*z],[x,z])
+
+-- One can solve a system or linear equations in full generality.
+
+solve([a1*x + b1*y = c1, a2*x + b2*y = c2], [x,y])
+
+-- One can, also specify matrix equations and solve those.
+
+A := matrix [[1,2],[3,4]]
+
+-- Note that the type of the result is a `Union`, since it cannot
+-- be guaranteed that the inverse matrix always exists.
+
+inverse A
+
+inverse matrix [[1,1],[1,1]]
+
+-- The `Matrix` domain is a pool for matrices of arbitrary size.
+
+B := matrix [[5,2,-1],[3,2,1]]
+
+-- It implements matrix multiplication.
+
+A*B
+
+-- However, multiplication is a partial operation that is only
+-- defined for compatible matrices.
+
+B*A
+
+C := transpose B
+
+B * C
+
+B * C - 4 * A
+
+-- The symbol `%` denotes the last evaluated expression.
+
+symmetric? %
+
+C * B
+
+rank %
+
+rowEchelon(C*B)
+
+-- FriCAS interprets certain symbols according to the
+-- context they appear in.
+
+(A + 1) - A
+
+nullSpace B
+
+-- The usual operations are available for matrices.
+
+A
+determinant A
+nullSpace A
+
+-- The characteristic polynomial of a matrix is determined
+-- by the following commands.
+
+id := diagonalMatrix [1,1]
+q := determinant(x*id-A)
+
+-- Or with a direct command.
+
+p:=characteristicPolynomial(A,x)
+
+radicalSolve(p, x)
+
+-- **Cayley-Hamilton-Theorem**:
+-- Every every square matrix over a commutative ring
+-- satisfies its own characteristic equation.
+
+eval(p,x=A)
+
+-- Closely related to matrices are vectors.
+-- Like the domain Matrix, the domain Vector does not have
+-- any size specifications.
+--
+-- The `==>` notation is used to form macros.
+
+Q ==> Fraction Integer
+V ==> Vector Q
+
+inverse(C*B +1)
+
+lv := % :: List(V)
+
+-- The first vector in this list is accessed through the dot notation.
+
+v1 := lv.1
+
+-- The cross product can only be taken for vectors of length 3.
+
+vc := cross(lv.1, lv.2)
+
+-- The cross product vector `vc` is orthogonal to the vectors
+-- `lv.1` and `lv.2`, but not to `lv.3`.
+
+[dot(lv.i, vc) for i in 1..3]
+
+-- Matrix and vector elements can be accessed and set by a dot notation.
+
+A.(1,2)
+
+A.(2,1) := -11
+
+A
+
+-- The dot notation allows to get and set entries.
+
+vc.3
+
+vc.1 := -33/2
+
+vc
+
+-- In fact, the above notation `A.i` and `A.i := v` is syntactic
+-- sugar for `elt(A, i)` and `setelt(A, i, v)`.
+
+elt(vc, 2)
+setelt!(vc, 2, 7)
+vc
+
+-- Furthermore, `A(i)` and `A i` is just the same as `A.i`.
+
+vc(2)
+vc 2
+vc.2
+
+-- Note that the result of an operation depends on the type
+-- of the argument.
+
+rowEchelon A
+
+rowEchelon(A::Matrix(Fraction Integer))
+
+-- Matrices over more complex structures can be dealt with in FriCAS.
+
+P := matrix [[x^2+1, %i/x], [-1/(x+%i), 2*x^3]]
+
+d := determinant P
+
+-- On can easily convert the result to other structures.
+
+d :: Fraction(Complex Polynomial Integer)
+
+d :: Complex(Fraction Polynomial Integer)
+
+-- Since the coefficient ring of the matrix `P` forms a field,
+-- the row-echelon form is again the unit matrix.
+
+rowEchelon P

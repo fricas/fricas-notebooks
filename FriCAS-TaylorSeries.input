@@ -1,0 +1,174 @@
+-- ---
+-- jupyter:
+--   jupytext:
+--     formats: ipynb,input:light
+--     text_representation:
+--       extension: .input
+--       format_name: light
+--       format_version: '1.5'
+--       jupytext_version: 1.10.0
+--   kernelspec:
+--     display_name: FriCAS
+--     language: spad
+--     name: jfricas
+-- ---
+
+-- This notebook is licenced under
+-- [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/).
+--
+-- # FriCAS Tutorial (Univariate and Multivariate Taylor Series)
+--
+-- ## Ralf Hemmecke &lt;[ralf@hemmecke.org](mailto:ralf@hemmecke.org)&gt;
+--
+-- Sources at [Github](http://github.com/fricas/fricas-notebooks/).
+
+)set message type off
+)set output algebra off
+setFormat!(FormatMathJax)$JFriCASSupport
+)set message type on
+
+)version
+
+-- ## Univariate Taylor series
+-- FriCAS can deal with power series in a simple manner.
+
+x := taylor 'x;
+sinh x
+
+-- However, sometimes one wants to be more precise with the domain
+-- that the object lives in. If, for example, we don't want power
+-- series over the general expression domain as exemplified above, we
+-- can give the coefficient domain explicitly.
+
+Z ==> Integer;
+Q ==> Fraction Z;
+Ux ==> UnivariateTaylorSeries(Q, 'x, 0);
+ux: Ux := 'x;
+sinh(ux)
+
+-- ## Combination of univariate Taylor series
+--
+-- The FriCAS interpreter is smart enough to create an appropriate
+-- type if two univariate Taylor series interact.
+--
+-- However, as seen below, the resulting domain is something like
+-- $\mathbb{Q}[[x]][[y]]$,
+-- i.e., univariate power series in y with coefficients that are
+-- univariate power series in x that have rational coefficients.
+--
+
+Uy ==> UnivariateTaylorSeries(Q, 'y, 0);
+uy: Uy := 'y;
+cosh(uy)
+
+sinh(ux)*cosh(uy)
+
+-- As a general rule, the FriCAS interpreter tries to find
+-- a "better coefficient domain" if something does not fit
+-- into the type of the current object in order to construct
+-- a more general domain that can hold the result of the operation.
+--
+-- In the case above that is probably not what we expected or wanted.
+
+-- ##  Multivariate Taylor series in infinitely many variables
+--
+-- There is a domain in FriCAS that is similar to the `Polynomial(Q)` domain.
+-- `TaylorSeries(Q)` is the domain of power series over $\mathbb{Q}$ in infinitely
+-- many variables.
+--
+-- With that domain the input is as simple as for univariate power series.
+
+T ==> TaylorSeries Q;
+tx:T := 'x;
+ty:T := 'y;
+sinh(tx)*cosh(ty)
+
+-- ## Multivariate TaylorSeries in two variables
+--
+-- FriCAS allows to be more precise with multivariate power series.
+-- It is possible to create multivariate power series in a given
+-- number of variables. Such a construction is, however, a bit more
+-- involved.
+--
+-- The domain (named $M$ below') is modelled as a univariate power series
+-- over bivariate polynomials where the n-th coefficient of the series is
+-- the polynomial consisting of all (bivariate) terms of degree $n$.
+--
+-- Thus we first have to create a bivariate polynomial domain.
+-- From this construction, it should be clear how to create multivariate
+-- series in three or more variables.
+
+vl: List Symbol := ['x, 'y];
+V ==> OrderedVariableList vl;
+P ==> SparseMultivariatePolynomial(Q, V);
+M ==> SparseMultivariateTaylorSeries(Q, V, P);
+mx: M := monomial(1$M, 'x, 1);
+my: M := monomial(1$M, 'y, 1);
+sinh(mx)*cosh(my)
+
+t0 := 1 - mx - mx*my
+
+t1: M := 1/t0
+
+t2: M := 1/t1
+
+-- ## Multivariate Taylor series with unknown coefficients
+--
+-- We want to generate taylor series with unknown coefficients.
+
+vl: List Symbol := ['x, 'y];
+V ==> OrderedVariableList vl
+E ==> Expression Integer
+R ==> SparseMultivariatePolynomial(E, V)
+S ==> SparseMultivariateTaylorSeries(E, V, R)
+X: S := monomial(1$R, 'x, 1);
+Y: S := monomial(1$R, 'y, 1);
+
+sx:S := recip(1-X)
+
+sy:S := recip(1-Y)
+
+s1 := sx*sy
+
+a: Symbol := 'a;
+
+-- We create a function that turns each monomial with exponent
+-- vector $l$ into a monomial with unknown coefficient $a(l)$.
+
+fr(r:R):R ==
+  rr: R := 0;
+  e := enumerate()$V;
+  for m in monomials r repeat
+    l := degree(m, e); -- List Integer
+    rr := rr + a(l)*m -- L is turned into List(OutputForm) here.
+  rr
+
+st1: Stream R := coefficients s1
+
+ast1: Stream R := map(fr, st1)
+
+a1: S := series ast1
+
+t:=(X+Y-1)*a1
+
+coefficient(t,3)
+
+c := concat [coefficients coefficient(t, n) for n in 0..4]
+
+variables first c
+
+vars: List Symbol := concat [variables z for z in c]
+
+v: List Symbol := [u for u in members set vars]
+
+es:=cons(a[0,0]-1, rest c)
+
+result:=solve([e=0 for e in es], v)
+
+-- ## Univariate Taylor series with unknown coefficients
+
+-- +
+a: Symbol := 'a
+st: Stream E := [a[i::OutputForm] for i in 0..]
+
+series(st)$SparseUnivariateTaylorSeries(E,'x,0)

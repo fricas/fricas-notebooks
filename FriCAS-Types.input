@@ -1,0 +1,206 @@
+-- ---
+-- jupyter:
+--   jupytext:
+--     formats: ipynb,input:light
+--     text_representation:
+--       extension: .input
+--       format_name: light
+--       format_version: '1.5'
+--       jupytext_version: 1.10.0
+--   kernelspec:
+--     display_name: FriCAS
+--     language: spad
+--     name: jfricas
+-- ---
+
+-- This notebook is licenced under
+-- [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/).
+--
+-- # FriCAS Tutorial (Types)
+--
+-- ## Ralf Hemmecke &lt;[ralf@hemmecke.org](mailto:ralf@hemmecke.org)&gt;
+--
+-- Sources at [Github](http://github.com/fricas/fricas-notebooks/).
+
+)set message type off
+)set output algebra off
+setFormat!(FormatMathJax)$JFriCASSupport
+)set message type on
+
+)version
+
+-- ## Type conversion
+-- Having types available also means to be able to convert elements
+-- from one type to another explicitly or specify functions that come
+-- from a particular domain.
+--
+-- We have already seen that with `identifier: SomeType` one can declare
+-- an identifier to be of a particular type without actually assigning
+-- a value to this identifier.
+--
+-- Suppose we have a value which is of type `SomeType`.
+-- The notation `value :: OtherType` is used to convert a value of
+-- `SomeType` to `OtherType`.
+-- Of course this operation does not always succeed.
+-- In fact, it only succeeds if FriCAS is able to find in its library
+-- an appropriate function (usually called `coerce`, `convert`,
+-- or `retract`) of type $\text{SomeType} \to \text{OtherType}$
+-- which does the job.
+--
+-- The FriCAS interpreter applies coercion function automatically.
+-- For example, when FriCAS sees `x+5` on the command line,
+-- it figures out that `x` is an identifier that has no value,
+-- so it converts this to a variable.
+
+x
+
+-- The number 5 is of type `PositiveInteger`.
+--
+-- FriCAS knows that `+` is in infix operator, so it looks for in
+-- its library for a function `+: (Variable(x), PositiveInteger) -> ??`.
+-- The result type is not yet clear. Such a function does not exist.
+--
+-- Before FriCAS says that the expression does not make sense,
+-- it tries harder. There is a coercion from `Variable(x)` to
+-- `Polynomial(??)` where the coefficient ring would still be unknown.
+-- The obvious idea would be to take `PositiveInteger` as the
+-- coefficient domain.
+-- But wait, polynomials are defined over a ring and the positive
+-- integers do not form a ring.
+-- Next try is a superdomain of PositiveInteger that is a ring.
+-- `Integer` is a good candidate. So we arrive at `Polynomial(Integer)`.
+--
+-- In `Polynomial(Integer)` there is a function `+: (%, %) -> %`
+-- defined, because FriCAS knows that integer polynomials form a ring.
+-- Note that `%` is FriCAS' abbreviation for "this type".
+--
+-- It remains to embed 5 into this polynomial ring.
+-- This is done via the coercions `coerce: PositiveInteger -> Integer`
+-- and `coerce: Integer -> Polynomial(Integer)`.
+--
+-- Taking everything into account, we see that the resulting type
+-- is `Polynomial(Integer)`.
+
+e1 := x+5
+
+-- You should not be surprised that subtracting `x` from the above
+-- expresssion is still a polynomial.
+
+e2 := e1-x
+
+-- Of course, this result can be retracted to a more specific domain.
+-- However, in general this is impossible and costs time, since the
+-- representations of 5 as an element of `Polynomial(Integer)` and 5
+-- as an element of `Integer` are different.
+
+e2 :: Integer
+
+-- Typeless computer algebra systems internally store `a*b` as an
+-- expression tree.
+-- Usually then it is concluded that this is the same as `b*a`.
+-- In FriCAS the meaning of the multiplication operator depends on the
+-- context it is used in.
+-- Non-commuting structures are easily representable in FriCAS.
+
+p: Quaternion(Integer) := quatern(1,2,0,0)
+q: Quaternion(Integer) := quatern(1,0,3,0)
+p*q - q*p
+
+-- FriCAS has a simple way to ask for properties of domains.
+
+Integer has Ring
+
+Integer has Field
+
+Fraction Integer has Field
+
+Polynomial Fraction Integer has Field
+
+-- FriCAS allows to assign types to variables.
+
+Q := Fraction Integer
+PQ := SparseUnivariatePolynomial Q
+
+-- The name of the variable plays no role.
+-- FriCAS shows it by default with a question mark.
+
+q1: PQ := 2*x+8
+
+-- The output routine decides how the variable is actually printed.
+
+[outputForm(q1,x), outputForm(q1,z)]
+
+q2: PQ := x^2-16
+
+gcd(q1,q2)
+
+extendedEuclidean(q1,q2+1, 1)
+
+PZ := SparseUnivariatePolynomial Integer
+
+p1: PZ := 2*x+8
+
+p2:PZ := x^2-16
+
+gcd(p1, p2)
+
+-- Since polynomials with integers as coefficients do not form a
+-- euclidean domain, there is no euclidean algorithm available.
+
+extendedEuclidean(p1,p2+1, 1)
+
+-- ### Domains and Categories
+-- In FriCAS everything has a type. Elements like numbers,
+-- polynomials, array, have `domains` as their types.
+-- For example, the type of `-5` is `Integer`.
+-- The type of a domain is called a `category`.
+-- The type of Integer is `IntegerNumberSystem`.
+-- The type of a category is the distinguished name `Category`.
+
+-5
+
+-- FriCAS does not normally show the names of the categories a
+-- domain belongs to.
+-- In fact, Integer does not only belong to `IntegerNumberSystem`,
+-- but also to `ConvertibleTo(String)`, `LeftOreRing`, `Canonical`,
+-- and `canonicalsClosed`.
+
+Integer
+
+Integer has IntegerNumberSystem
+
+Integer has LeftOreRing
+
+-- A category only describes the sigatures of functions that domains
+-- that belong to this category must provide.
+--
+-- Categories are organised in hierarchies.
+-- A category can inherit from several other categories.
+-- Multiple inheritance is not a problem since categories only describe
+-- the interface of domains but do not implement any function themselves.
+--
+-- A domain must provide all function signatures of the category it
+-- belongs to. Domains can only inherit code from one single other domain.
+--
+-- Neither domains nor categories are built into the SPAD language.
+-- They are all implemented in a library that comes with FriCAS as
+-- source code.
+--
+-- A user can easily write new domains and categories and compile them.
+-- There is no difference between user defined types and library defined
+-- types.
+--
+-- Like the domains `Polynomial(Integer)` and `Complex(Integer)`
+-- or the categories `Module(Integer)` and `VectorSpace(PrimeField(5))`,
+-- domains and categories can be constructed as the result of a function,
+-- a domain or category `constructor`. This is the basis for parametrized
+-- polymorphism.
+--
+-- Which functions a category exports may depend on a parameter,
+-- for example, `SparseUnivariatePolynomial(R)` is of type
+-- `EuclideanDomain` only if the domain `R` that is given as a parameter
+-- is of type `Field`.
+
+SparseUnivariatePolynomial Fraction Integer has EuclideanDomain
+
+SparseUnivariatePolynomial Integer has EuclideanDomain
