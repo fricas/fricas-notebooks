@@ -22,12 +22,7 @@
 --
 -- Sources at [Github](http://github.com/fricas/fricas-notebooks/).
 
-)set message type off
-)set output algebra off
-setFormat!(FormatMathJax)$JFriCASSupport
-)set message type on
-
-)version
+)read init.input )quiet
 
 -- ## Univariate differential case
 -- Let's first consider a differential operator algebra $A$ over the

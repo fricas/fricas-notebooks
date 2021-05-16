@@ -1,0 +1,16 @@
+-- This is a general input file for all jupyter notebooks.
+
+-- Temporarily do not show the type.
+)set message type off
+
+-- Switch of default algebra output.
+)set output algebra off
+
+-- Switch on MathJax output format.
+setFormat!(FormatMathJax)$JFriCASSupport
+
+-- Show the type.
+)set message type on
+
+-- Print version information of FriCAS.
+)version

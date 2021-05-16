@@ -22,10 +22,7 @@
 --
 -- Sources at [Github](http://github.com/fricas/fricas-notebooks/).
 
-)set message type off
-)set output algebra off
-setFormat!(FormatMathJax)$JFriCASSupport
-)set message type on
+)read init.input )quiet
 
 -- # )help set
 
